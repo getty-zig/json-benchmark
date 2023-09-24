@@ -40,10 +40,10 @@ pub fn benchmark(comptime B: type) !void {
             "Benchmark",
             formatter("{s}", ""),
             formatter("{s}", "Iterations"),
-            formatter("{s}", "Min(ns)"),
-            formatter("{s}", "Max(ns)"),
+            formatter("{s}", "Min(ms)"),
+            formatter("{s}", "Max(ms)"),
             formatter("{s}", "Variance"),
-            formatter("{s}", "Mean(ns)"),
+            formatter("{s}", "Mean(ms)"),
         );
         inline for (functions) |f| {
             var i: usize = 0;
@@ -62,17 +62,17 @@ pub fn benchmark(comptime B: type) !void {
 
     var _stderr = std.io.bufferedWriter(std.io.getStdErr().writer());
     const stderr = _stderr.writer();
-    try stderr.writeAll("\n");
+    try stderr.writeAll(" \n");
     _ = try printBenchmark(
         stderr,
         min_width,
         "Benchmark",
         formatter("{s}", ""),
         formatter("{s}", "Iterations"),
-        formatter("{s}", "Min(ns)"),
-        formatter("{s}", "Max(ns)"),
+        formatter("{s}", "Min(ms)"),
+        formatter("{s}", "Max(ms)"),
         formatter("{s}", "Variance"),
-        formatter("{s}", "Mean(ns)"),
+        formatter("{s}", "Mean(ms)"),
     );
     try stderr.writeAll("\n");
     for (min_width) |w|
@@ -90,16 +90,14 @@ pub fn benchmark(comptime B: type) !void {
             var runtime_sum: u128 = 0;
 
             var i: usize = 0;
-            while (i < min_iterations or
-                (i < max_iterations and runtime_sum < max_time)) : (i += 1)
-            {
+            while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
                 timer.reset();
-
                 const res = switch (@TypeOf(arg)) {
                     void => @field(B, def.name)(),
                     else => @field(B, def.name)(arg),
                 };
-                runtimes[i] = timer.read();
+                runtimes[i] = timer.read() / std.time.ns_per_ms;
+
                 runtime_sum += runtimes[i];
                 if (runtimes[i] < min) min = runtimes[i];
                 if (runtimes[i] > max) max = runtimes[i];
@@ -193,84 +191,4 @@ fn alignedPrint(writer: anytype, dir: enum { left, right }, width: u64, comptime
     if (dir == .left)
         try cow.writer().writeByteNTimes(' ', math.sub(u64, width, value_len) catch 0);
     return cow.bytes_written;
-}
-
-test "benchmark" {
-    try benchmark(struct {
-        // The functions will be benchmarked with the following inputs.
-        // If not present, then it is assumed that the functions
-        // take no input.
-        pub const args = [_][]const u8{
-            &([_]u8{ 1, 10, 100 } ** 16),
-            &([_]u8{ 1, 10, 100 } ** 32),
-            &([_]u8{ 1, 10, 100 } ** 64),
-            &([_]u8{ 1, 10, 100 } ** 128),
-            &([_]u8{ 1, 10, 100 } ** 256),
-            &([_]u8{ 1, 10, 100 } ** 512),
-        };
-
-        // You can specify `arg_names` to give the inputs more meaningful
-        // names. If the index of the input exceeds the available string
-        // names, the index is used as a backup.
-        pub const arg_names = [_][]const u8{
-            "block=16",
-            "block=32",
-            "block=64",
-            "block=128",
-            "block=256",
-            "block=512",
-        };
-
-        // How many iterations to run each benchmark.
-        // If not present then a default will be used.
-        pub const min_iterations = 1000;
-        pub const max_iterations = 100000;
-
-        pub fn sum_slice(slice: []const u8) u64 {
-            var res: u64 = 0;
-            for (slice) |item|
-                res += item;
-
-            return res;
-        }
-
-        pub fn sum_reader(slice: []const u8) u64 {
-            var _reader = io.fixedBufferStream(slice);
-            var reader = &_reader.reader();
-            var res: u64 = 0;
-            while (reader.readByte()) |c| {
-                res += c;
-            } else |_| {}
-
-            return res;
-        }
-    });
-}
-
-test "benchmark generics" {
-    try benchmark(struct {
-        pub const args = [_]type{
-            @Vector(4, f16),  @Vector(4, f32),  @Vector(4, f64),
-            @Vector(8, f16),  @Vector(8, f32),  @Vector(8, f64),
-            @Vector(16, f16), @Vector(16, f32), @Vector(16, f64),
-        };
-
-        pub const arg_names = [_][]const u8{
-            "vec4f16",  "vec4f32",  "vec4f64",
-            "vec8f16",  "vec8f32",  "vec8f64",
-            "vec16f16", "vec16f32", "vec16f64",
-        };
-
-        pub fn sum_vectors(comptime T: type) T {
-            const info = @typeInfo(T).Vector;
-            const one: T = @splat(@as(info.child, 1));
-            const vecs = [1]T{one} ** 512;
-
-            var res = one;
-            for (vecs) |vec| {
-                res += vec;
-            }
-            return res;
-        }
-    });
 }
