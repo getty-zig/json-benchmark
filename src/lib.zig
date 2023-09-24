@@ -1,5 +1,5 @@
-const std = @import("std");
 const json = @import("json");
+const std = @import("std");
 
 const bench = @import("bench.zig");
 const data = @import("data.zig");
