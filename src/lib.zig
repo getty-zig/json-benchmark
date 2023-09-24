@@ -1,7 +1,7 @@
 const std = @import("std");
 const json = @import("json");
 
-const benchmark = @import("bench.zig").benchmark;
+const bench = @import("bench.zig");
 const data = @import("data.zig");
 
 const heap = std.heap;
@@ -10,7 +10,7 @@ const mem = std.mem;
 test "deserialize" {
     const n_deserializations: comptime_int = 100_000;
 
-    try benchmark(struct {
+    try bench.run(struct {
         pub const allocator = heap.c_allocator;
         pub const types = [_]type{
             data.Pastries,

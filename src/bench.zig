@@ -12,7 +12,7 @@ const time = std.time;
 
 const Decl = std.builtin.Type.Declaration;
 
-pub fn benchmark(comptime B: type) !void {
+pub fn run(comptime B: type) !void {
     const ally = if (@hasDecl(B, "allocator")) B.allocator else testing.allocator;
     const types = if (@hasDecl(B, "types")) B.types else [_]type{{}};
     const args = if (@hasDecl(B, "args")) B.args else [_]void{{}};
