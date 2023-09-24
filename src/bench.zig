@@ -1,4 +1,4 @@
-//! https://github.com/Hejsil/zig-bench/tree/60c49fc
+//! A modified version of https://github.com/Hejsil/zig-bench/tree/60c49fc.
 
 const std = @import("std");
 
