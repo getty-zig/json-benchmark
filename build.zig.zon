@@ -1,0 +1,10 @@
+.{
+    .name = "json-benchmark",
+    .version = "0.1.0",
+    .dependencies = .{
+        .json = .{
+            .url = "https://github.com/getty-zig/json/archive/7ce4cff.tar.gz",
+            .hash = "1220dc6b6c29f67f7a1d91cbb5a7d6811a822692ab8ec7efe0f800770dbf58338033",
+        },
+    },
+}
