@@ -4,12 +4,14 @@ const json = @import("json");
 const benchmark = @import("bench.zig").benchmark;
 const data = @import("data.zig");
 
-const c_ally = std.heap.c_allocator;
+const heap = std.heap;
+const mem = std.mem;
 
 test "deserialize" {
     const n_deserializations: comptime_int = 100_000;
 
     try benchmark(struct {
+        pub const allocator = heap.c_allocator;
         pub const types = [_]type{
             data.Pastries,
             data.Canada,
@@ -26,17 +28,22 @@ test "deserialize" {
         pub const min_iterations = 10;
         pub const max_iterations = 10;
 
-        pub fn benchGetty(comptime T: type, input: []const u8) !void {
+        pub fn benchStd(ally: mem.Allocator, comptime T: type, input: []const u8) !void {
             for (0..n_deserializations) |_| {
-                const result = try json.fromSlice(c_ally, T, input);
-                defer result.deinit();
+                const output = try std.json.parseFromSlice(
+                    T,
+                    ally,
+                    input,
+                    .{ .allocate = .alloc_always },
+                );
+                defer output.deinit();
             }
         }
 
-        pub fn benchStd(comptime T: type, input: []const u8) !void {
+        pub fn benchGetty(ally: mem.Allocator, comptime T: type, input: []const u8) !void {
             for (0..n_deserializations) |_| {
-                const output = try std.json.parseFromSlice(T, c_ally, input, .{ .allocate = .alloc_always });
-                defer output.deinit();
+                const result = try json.fromSlice(ally, T, input);
+                defer result.deinit();
             }
         }
     });

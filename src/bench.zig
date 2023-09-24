@@ -7,11 +7,13 @@ const io = std.io;
 const math = std.math;
 const mem = std.mem;
 const meta = std.meta;
+const testing = std.testing;
 const time = std.time;
 
 const Decl = std.builtin.Type.Declaration;
 
 pub fn benchmark(comptime B: type) !void {
+    const ally = if (@hasDecl(B, "allocator")) B.allocator else testing.allocator;
     const types = if (@hasDecl(B, "types")) B.types else [_]type{{}};
     const args = if (@hasDecl(B, "args")) B.args else [_]void{{}};
     const arg_names = if (@hasDecl(B, "names")) B.names else [_]u8{};
@@ -93,7 +95,7 @@ pub fn benchmark(comptime B: type) !void {
             var i: usize = 0;
             while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
                 timer.reset();
-                const res = @field(B, def.name)(types[index], arg);
+                const res = @field(B, def.name)(ally, types[index], arg);
                 runtimes[i] = timer.read() / std.time.ns_per_ms;
 
                 runtime_sum += runtimes[i];
