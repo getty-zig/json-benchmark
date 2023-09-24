@@ -12,8 +12,9 @@ const time = std.time;
 const Decl = std.builtin.Type.Declaration;
 
 pub fn benchmark(comptime B: type) !void {
+    const types = if (@hasDecl(B, "types")) B.types else [_]type{{}};
     const args = if (@hasDecl(B, "args")) B.args else [_]void{{}};
-    const arg_names = if (@hasDecl(B, "arg_names")) B.arg_names else [_]u8{};
+    const arg_names = if (@hasDecl(B, "names")) B.names else [_]u8{};
     const min_iterations = if (@hasDecl(B, "min_iterations")) B.min_iterations else 10000;
     const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else 100000;
     const max_time = 500 * time.ns_per_ms;
@@ -92,10 +93,7 @@ pub fn benchmark(comptime B: type) !void {
             var i: usize = 0;
             while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
                 timer.reset();
-                const res = switch (@TypeOf(arg)) {
-                    void => @field(B, def.name)(),
-                    else => @field(B, def.name)(arg),
-                };
+                const res = @field(B, def.name)(types[index], arg);
                 runtimes[i] = timer.read() / std.time.ns_per_ms;
 
                 runtime_sum += runtimes[i];

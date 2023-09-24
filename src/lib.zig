@@ -2,6 +2,10 @@ const std = @import("std");
 const json = @import("json");
 
 const benchmark = @import("bench.zig").benchmark;
+const Canada = @import("data.zig").Canada;
+
+const c_ally = std.heap.c_allocator;
+const test_ally = std.testing.allocator;
 
 const Pastries = []struct {
     id: []const u8,
@@ -153,42 +157,34 @@ const pastries =
     \\]
 ;
 
-test "benchmark" {
-    const Args = struct { type, []const u8 };
-
+test "deserialize" {
     try benchmark(struct {
-        // The functions will be benchmarked with the following inputs.
-        // If not present, then it is assumed that the functions
-        // take no input.
-        pub const args = [_]Args{
-            .{
-                Pastries,
-                pastries,
-            },
+        pub const types = [_]type{
+            Pastries,
+            Canada,
         };
-
-        // You can specify `arg_names` to give the inputs more meaningful
-        // names. If the index of the input exceeds the available string
-        // names, the index is used as a backup.
-        pub const arg_names = [_][]const u8{
+        pub const args = [_][]const u8{
+            pastries,
+            @embedFile("testdata/canada_geometry.json"),
+        };
+        pub const names = [_][]const u8{
             "Pastries",
+            "Canada Geometry",
         };
 
-        // How many iterations to run each benchmark.
-        // If not present then a default will be used.
-        pub const min_iterations = 5;
-        pub const max_iterations = 5;
+        pub const min_iterations = 10;
+        pub const max_iterations = 10;
 
-        pub fn gettyParse(comptime data: Args) !void {
+        pub fn gettyParse(comptime T: type, input: []const u8) !void {
             for (0..100_000) |_| {
-                const result = try json.fromSlice(std.heap.c_allocator, data[0], data[1]);
+                const result = try json.fromSlice(c_ally, T, input);
                 defer result.deinit();
             }
         }
 
-        pub fn stdParse(comptime data: Args) !void {
+        pub fn stdParse(comptime T: type, input: []const u8) !void {
             for (0..100_000) |_| {
-                const output = try std.json.parseFromSlice(data[0], std.heap.c_allocator, data[1], .{ .allocate = .alloc_always });
+                const output = try std.json.parseFromSlice(T, c_ally, input, .{ .allocate = .alloc_always });
                 defer output.deinit();
             }
         }
