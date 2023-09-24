@@ -7,6 +7,8 @@ const data = @import("data.zig");
 const c_ally = std.heap.c_allocator;
 
 test "deserialize" {
+    const n_deserializations: comptime_int = 100_000;
+
     try benchmark(struct {
         pub const types = [_]type{
             data.Pastries,
@@ -25,14 +27,14 @@ test "deserialize" {
         pub const max_iterations = 10;
 
         pub fn benchGetty(comptime T: type, input: []const u8) !void {
-            for (0..100_000) |_| {
+            for (0..n_deserializations) |_| {
                 const result = try json.fromSlice(c_ally, T, input);
                 defer result.deinit();
             }
         }
 
         pub fn benchStd(comptime T: type, input: []const u8) !void {
-            for (0..100_000) |_| {
+            for (0..n_deserializations) |_| {
                 const output = try std.json.parseFromSlice(T, c_ally, input, .{ .allocate = .alloc_always });
                 defer output.deinit();
             }
