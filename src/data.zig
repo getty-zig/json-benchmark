@@ -50,10 +50,10 @@ pub const CITM = struct {
     venueNames: StringHashMap(String),
 
     const Events = struct {
-        description: String,
+        description: ?String,
         id: isize,
-        logo: String,
-        name: String,
+        logo: ?String,
+        name: ?String,
         subTopicIds: []isize,
         subjectCode: ?String,
         subtitle: ?String,
@@ -66,7 +66,7 @@ pub const CITM = struct {
         logo: ?String,
         name: ?String,
         prices: []Prices,
-        setCategories: []SeatCategories,
+        seatCategories: []SeatCategories,
         seatMapImage: ?String,
         start: i64,
         venueCode: String,
@@ -74,17 +74,17 @@ pub const CITM = struct {
         const Prices = struct {
             amount: isize,
             audienceSubCategoryId: i64,
-            setCategoryId: i64,
+            seatCategoryId: i64,
         };
 
         const SeatCategories = struct {
             areas: []Areas,
-            setCategoryId: isize,
+            seatCategoryId: isize,
         };
 
         const Areas = struct {
             areaId: isize,
-            blockIds: []isize,
+            blockIds: []?isize,
         };
     };
 };
