@@ -94,16 +94,30 @@ pub fn run(comptime B: type) !void {
 
             var i: usize = 0;
             while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
+                // Run benchmark.
                 timer.reset();
                 const res = @field(B, def.name)(ally, types[index], arg);
-                runtimes[i] = timer.read() / std.time.ns_per_ms;
+                runtimes[i] = timer.read();
 
+                // Add runtime to sum.
                 runtime_sum += runtimes[i];
-                if (runtimes[i] < min) min = runtimes[i];
-                if (runtimes[i] > max) max = runtimes[i];
+
+                // Set mininum and maximum runtimes.
+                if (runtimes[i] < min) {
+                    min = if (res == error.Skipped) 0 else runtimes[i];
+                }
+                if (runtimes[i] > max) {
+                    max = if (res == error.Skipped) 0 else runtimes[i];
+                }
+
+                // Avoid return value optimizations.
                 switch (@TypeOf(res)) {
                     void => {},
                     else => std.mem.doNotOptimizeAway(&res),
+                }
+
+                if (res == error.Skipped) {
+                    break;
                 }
             }
 
@@ -118,9 +132,56 @@ pub fn run(comptime B: type) !void {
 
             if (index < arg_names.len) {
                 const arg_name = formatter("{s}", arg_names[index]);
-                _ = try printBenchmark(stderr, min_width, def.name, arg_name, i, min, max, variance, runtime_mean);
+
+                if (min == 0 and max == 0) {
+                    _ = try printBenchmark(
+                        stderr,
+                        min_width,
+                        def.name,
+                        arg_name,
+                        formatter("{s}", "N/A"),
+                        formatter("{s}", "N/A"),
+                        formatter("{s}", "N/A"),
+                        formatter("{s}", "N/A"),
+                        formatter("{s}", "N/A"),
+                    );
+                } else {
+                    _ = try printBenchmark(
+                        stderr,
+                        min_width,
+                        def.name,
+                        arg_name,
+                        i,
+                        min / time.ns_per_ms,
+                        max / time.ns_per_ms,
+                        variance / time.ns_per_ms,
+                        runtime_mean / time.ns_per_ms,
+                    );
+                }
+            } else if (min == 0 and max == 0) {
+                _ = try printBenchmark(
+                    stderr,
+                    min_width,
+                    def.name,
+                    index,
+                    formatter("{s}", "N/A"),
+                    formatter("{s}", "N/A"),
+                    formatter("{s}", "N/A"),
+                    formatter("{s}", "N/A"),
+                    formatter("{s}", "N/A"),
+                );
             } else {
-                _ = try printBenchmark(stderr, min_width, def.name, index, i, min, max, variance, runtime_mean);
+                _ = try printBenchmark(
+                    stderr,
+                    min_width,
+                    def.name,
+                    index,
+                    i,
+                    min / time.ns_per_ms,
+                    max / time.ns_per_ms,
+                    variance / time.ns_per_ms,
+                    runtime_mean / time.ns_per_ms,
+                );
             }
             try stderr.writeAll("\n");
             try stderr.context.flush();
