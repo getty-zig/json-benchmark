@@ -36,7 +36,7 @@ pub fn run(comptime B: type) !void {
 
     const min_width = blk: {
         const writer = io.null_writer;
-        var res = [_]u64{ 0, 0, 0, 0, 0, 0 };
+        var res = [_]u64{ 0, 0, 0, 0, 0 };
         res = try printBenchmark(
             writer,
             res,
@@ -45,7 +45,6 @@ pub fn run(comptime B: type) !void {
             formatter("{s}", "Iterations"),
             formatter("{s}", "Min(ms)"),
             formatter("{s}", "Max(ms)"),
-            formatter("{s}", "Variance"),
             formatter("{s}", "Mean(ms)"),
         );
         inline for (functions) |f| {
@@ -54,9 +53,9 @@ pub fn run(comptime B: type) !void {
                 const max = math.maxInt(u32);
                 res = if (i < arg_names.len) blk2: {
                     const arg_name = formatter("{s}", arg_names[i]);
-                    break :blk2 try printBenchmark(writer, res, f.name, arg_name, max, max, max, max, max);
+                    break :blk2 try printBenchmark(writer, res, f.name, arg_name, max, max, max, max);
                 } else blk2: {
-                    break :blk2 try printBenchmark(writer, res, f.name, i, max, max, max, max, max);
+                    break :blk2 try printBenchmark(writer, res, f.name, i, max, max, max, max);
                 };
             }
         }
@@ -74,7 +73,6 @@ pub fn run(comptime B: type) !void {
         formatter("{s}", "Iterations"),
         formatter("{s}", "Min(ms)"),
         formatter("{s}", "Max(ms)"),
-        formatter("{s}", "Variance"),
         formatter("{s}", "Mean(ms)"),
     );
     try stderr.writeAll("\n");
@@ -94,7 +92,7 @@ pub fn run(comptime B: type) !void {
 
             var i: usize = 0;
             while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
-                // Run benchmark.
+                // Run benchmark and store runtime (in nanoseconds).
                 timer.reset();
                 const res = @field(B, def.name)(ally, types[index], arg);
                 runtimes[i] = timer.read();
@@ -110,25 +108,20 @@ pub fn run(comptime B: type) !void {
                     max = if (res == error.Skipped) 0 else runtimes[i];
                 }
 
+                // Early break for skipped tests.
+                if (res == error.Skipped) {
+                    break;
+                }
+
                 // Avoid return value optimizations.
                 switch (@TypeOf(res)) {
                     void => {},
                     else => std.mem.doNotOptimizeAway(&res),
                 }
-
-                if (res == error.Skipped) {
-                    break;
-                }
             }
 
+            // Compute mean.
             const runtime_mean: u64 = @intCast(runtime_sum / i);
-
-            var d_sq_sum: u128 = 0;
-            for (runtimes[0..i]) |runtime| {
-                const d = @as(i64, @intCast(@as(i128, @intCast(runtime)) - runtime_mean));
-                d_sq_sum += @as(u64, @intCast(d * d));
-            }
-            const variance = d_sq_sum / i;
 
             if (index < arg_names.len) {
                 const arg_name = formatter("{s}", arg_names[index]);
@@ -143,7 +136,6 @@ pub fn run(comptime B: type) !void {
                         formatter("{s}", "N/A"),
                         formatter("{s}", "N/A"),
                         formatter("{s}", "N/A"),
-                        formatter("{s}", "N/A"),
                     );
                 } else {
                     _ = try printBenchmark(
@@ -154,7 +146,6 @@ pub fn run(comptime B: type) !void {
                         i,
                         min / time.ns_per_ms,
                         max / time.ns_per_ms,
-                        variance / time.ns_per_ms,
                         runtime_mean / time.ns_per_ms,
                     );
                 }
@@ -164,7 +155,6 @@ pub fn run(comptime B: type) !void {
                     min_width,
                     def.name,
                     index,
-                    formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
@@ -179,7 +169,6 @@ pub fn run(comptime B: type) !void {
                     i,
                     min / time.ns_per_ms,
                     max / time.ns_per_ms,
-                    variance / time.ns_per_ms,
                     runtime_mean / time.ns_per_ms,
                 );
             }
@@ -191,15 +180,14 @@ pub fn run(comptime B: type) !void {
 
 fn printBenchmark(
     writer: anytype,
-    min_widths: [6]u64,
+    min_widths: [5]u64,
     func_name: []const u8,
     arg_name: anytype,
     iterations: anytype,
     min_runtime: anytype,
     max_runtime: anytype,
-    variance: anytype,
     mean_runtime: anytype,
-) ![6]u64 {
+) ![5]u64 {
     const arg_len = std.fmt.count("{}", .{arg_name});
     const name_len = try alignedPrint(writer, .left, min_widths[0], "{s}{s}{}{s}", .{
         func_name,
@@ -214,11 +202,15 @@ fn printBenchmark(
     try writer.writeAll(" ");
     const max_runtime_len = try alignedPrint(writer, .right, min_widths[3], "{}", .{max_runtime});
     try writer.writeAll(" ");
-    const variance_len = try alignedPrint(writer, .right, min_widths[4], "{}", .{variance});
-    try writer.writeAll(" ");
-    const mean_runtime_len = try alignedPrint(writer, .right, min_widths[5], "{}", .{mean_runtime});
+    const mean_runtime_len = try alignedPrint(writer, .right, min_widths[4], "{}", .{mean_runtime});
 
-    return [_]u64{ name_len, it_len, min_runtime_len, max_runtime_len, variance_len, mean_runtime_len };
+    return [_]u64{
+        name_len,
+        it_len,
+        min_runtime_len,
+        max_runtime_len,
+        mean_runtime_len,
+    };
 }
 
 fn formatter(comptime fmt_str: []const u8, value: anytype) Formatter(fmt_str, @TypeOf(value)) {
@@ -242,7 +234,13 @@ fn Formatter(comptime fmt_str: []const u8, comptime T: type) type {
     };
 }
 
-fn alignedPrint(writer: anytype, dir: enum { left, right }, width: u64, comptime fmt: []const u8, args: anytype) !u64 {
+fn alignedPrint(
+    writer: anytype,
+    dir: enum { left, right },
+    width: u64,
+    comptime fmt: []const u8,
+    args: anytype,
+) !u64 {
     const value_len = std.fmt.count(fmt, args);
 
     var cow = io.countingWriter(writer);
