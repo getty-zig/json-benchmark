@@ -32,7 +32,7 @@ test "deserialize" {
         pub const min_iterations = iterations;
         pub const max_iterations = iterations;
 
-        pub fn benchGetty(
+        pub fn de_getty(
             ally: mem.Allocator,
             comptime T: type,
             input: []const u8,
@@ -45,7 +45,7 @@ test "deserialize" {
 
         // NOTE: Not all test data can be benchmarked using std.json's due to
         // its lack of support for various types within the standard library.
-        pub fn benchStd(
+        pub fn de_std(
             ally: mem.Allocator,
             comptime T: type,
             input: []const u8,
