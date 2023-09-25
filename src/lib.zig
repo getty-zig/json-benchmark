@@ -11,7 +11,6 @@ test "deserialize" {
     const deserializations: comptime_int = 100_000;
     const iterations: comptime_int = 10;
 
-    // Getty JSON
     try bench.run(struct {
         pub const allocator = heap.c_allocator;
         pub const types = [_]type{
