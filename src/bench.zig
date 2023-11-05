@@ -44,10 +44,10 @@ pub fn run(comptime B: type) !void {
             res,
             "name",
             formatter("{s}", ""),
-            formatter("{s}", "Iterations"),
-            formatter("{s}", "Min(ms)"),
-            formatter("{s}", "Max(ms)"),
-            formatter("{s}", "Mean(ms)"),
+            formatter("{s}", "n"),
+            formatter("{s}", "min time"),
+            formatter("{s}", "max time"),
+            formatter("{s}", "mean time"),
         );
         inline for (functions) |f| {
             var i: usize = 0;
@@ -73,10 +73,10 @@ pub fn run(comptime B: type) !void {
         min_width,
         "name",
         formatter("{s}", ""),
-        formatter("{s}", "Iterations"),
-        formatter("{s}", "Min(ms)"),
-        formatter("{s}", "Max(ms)"),
-        formatter("{s}", "Mean(ms)"),
+        formatter("{s}", "n"),
+        formatter("{s}", "min time"),
+        formatter("{s}", "max time"),
+        formatter("{s}", "mean time"),
     );
     try stderr.writeAll("\n");
     try stderr.context.flush();
@@ -144,9 +144,9 @@ pub fn run(comptime B: type) !void {
                         def.name,
                         arg_name,
                         i,
-                        min / time.ns_per_ms,
-                        max / time.ns_per_ms,
-                        runtime_mean / time.ns_per_ms,
+                        formatter("{d}ms", min / time.ns_per_ms),
+                        formatter("{d}ms", max / time.ns_per_ms),
+                        formatter("{d}ms", runtime_mean / time.ns_per_ms),
                     );
                 }
             } else if (min == 0 and max == 0) {
@@ -167,9 +167,9 @@ pub fn run(comptime B: type) !void {
                     def.name,
                     index,
                     i,
-                    min / time.ns_per_ms,
-                    max / time.ns_per_ms,
-                    runtime_mean / time.ns_per_ms,
+                    formatter("{d}ms", min / time.ns_per_ms),
+                    formatter("{d}ms", max / time.ns_per_ms),
+                    formatter("{d}ms", runtime_mean / time.ns_per_ms),
                 );
             }
             try stderr.writeAll("\n");
