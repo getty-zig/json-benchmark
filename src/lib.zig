@@ -24,15 +24,15 @@ test "deserialize" {
             @embedFile("data/citm_catalog.json"),
         };
         pub const names = [_][]const u8{
-            "Pastries",
-            "Canada Geometry",
-            "CITM Catalog",
+            "pastries",
+            "canada",
+            //"citm_catalog",
         };
 
         pub const min_iterations = iterations;
         pub const max_iterations = iterations;
 
-        pub fn de_getty(
+        pub fn @"de/getty"(
             ally: mem.Allocator,
             comptime T: type,
             input: []const u8,
@@ -45,7 +45,7 @@ test "deserialize" {
 
         // NOTE: Not all test data can be benchmarked using std.json's due to
         // its lack of support for various types within the standard library.
-        pub fn de_std(
+        pub fn @"de/std"(
             ally: mem.Allocator,
             comptime T: type,
             input: []const u8,
