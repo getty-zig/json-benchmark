@@ -73,7 +73,7 @@ pub fn run(comptime B: type) !void {
         min_width,
         "name",
         formatter("{s}", ""),
-        formatter("{s}", "n"),
+        formatter("{s}", "iterations"),
         formatter("{s}", "min time"),
         formatter("{s}", "max time"),
         formatter("{s}", "mean time"),
