@@ -15,9 +15,8 @@ const Decl = std.builtin.Type.Declaration;
 pub fn run(comptime B: type) !void {
     // Set up prerequisites/options.
     const ally = if (@hasDecl(B, "allocator")) B.allocator else testing.allocator;
-    const types = if (@hasDecl(B, "types")) B.types else [_]type{{}};
-    const args = if (@hasDecl(B, "args")) B.args else [_]void{{}};
-    const arg_names = if (@hasDecl(B, "names")) B.names else [_]u8{};
+    const tests = if (@hasDecl(B, "tests")) B.tests else @compileError("missing `tests` declaration");
+    const target_types = if (@hasDecl(B, "target_types")) B.target_types else [_]type{{}};
     const min_iterations = if (@hasDecl(B, "min_iterations")) B.min_iterations else 10000;
     const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else 100000;
     const max_time = 500 * time.ns_per_ms;
@@ -51,10 +50,10 @@ pub fn run(comptime B: type) !void {
         );
         inline for (functions) |f| {
             var i: usize = 0;
-            while (i < args.len) : (i += 1) {
+            while (i < tests.len) : (i += 1) {
                 const max = math.maxInt(u32);
-                res = if (i < arg_names.len) blk2: {
-                    const arg_name = formatter("{s}", arg_names[i]);
+                res = if (i < tests.len) blk2: {
+                    const arg_name = formatter("{s}", tests[i].name);
                     break :blk2 try printBenchmark(writer, res, f.name, arg_name, max, max, max, max);
                 } else blk2: {
                     break :blk2 try printBenchmark(writer, res, f.name, i, max, max, max, max);
@@ -83,7 +82,7 @@ pub fn run(comptime B: type) !void {
 
     var timer = try time.Timer.start();
 
-    inline for (args, 0..) |arg, index| outer: {
+    inline for (tests, 0..) |t, index| outer: {
         inline for (functions) |def| {
             var runtimes: [max_iterations]u64 = undefined;
             var min: u64 = math.maxInt(u64);
@@ -94,7 +93,7 @@ pub fn run(comptime B: type) !void {
             while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
                 // Run benchmark and store runtime (in nanoseconds).
                 timer.reset();
-                const res = @field(B, def.name)(ally, types[index], arg);
+                const res = @field(B, def.name)(ally, target_types[index], t.data);
                 runtimes[i] = timer.read();
 
                 // Add runtime to sum.
@@ -123,8 +122,8 @@ pub fn run(comptime B: type) !void {
             // Compute mean.
             const runtime_mean: u64 = @intCast(runtime_sum / i);
 
-            if (index < arg_names.len) {
-                const arg_name = formatter("{s}", arg_names[index]);
+            if (index < tests.len) {
+                const arg_name = formatter("{s}", tests[index].name);
 
                 if (min == 0 and max == 0) {
                     _ = try printBenchmark(
