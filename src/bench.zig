@@ -86,7 +86,8 @@ pub fn run(comptime B: type) !void {
     try stderr.context.flush();
 
     var timer = try time.Timer.start();
-    inline for (args, 0..) |arg, index| {
+
+    inline for (args, 0..) |arg, index| outer: {
         inline for (functions) |def| {
             var runtimes: [max_iterations]u64 = undefined;
             var min: u64 = math.maxInt(u64);
@@ -113,7 +114,7 @@ pub fn run(comptime B: type) !void {
 
                 // Early break for skipped tests.
                 if (res == error.Skipped) {
-                    break;
+                    break :outer;
                 }
 
                 // Avoid return value optimizations.

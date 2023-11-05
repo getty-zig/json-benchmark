@@ -8,7 +8,7 @@ const heap = std.heap;
 const mem = std.mem;
 
 test "deserialize" {
-    const deserializations: comptime_int = 100_000;
+    const deserializations: comptime_int = 1024;
     const iterations: comptime_int = 10;
 
     try bench.run(struct {
@@ -21,12 +21,12 @@ test "deserialize" {
         pub const args = [_][]const u8{
             @embedFile("data/pastries.json"),
             @embedFile("data/canada_geometry.json"),
-            //@embedFile("data/citm_catalog.json"),
+            @embedFile("data/citm_catalog.json"),
         };
         pub const names = [_][]const u8{
             "pastries",
             "canada",
-            //"citm_catalog",
+            "citm_catalog",
         };
 
         pub const min_iterations = iterations;
