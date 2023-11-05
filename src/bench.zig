@@ -14,11 +14,11 @@ const Decl = std.builtin.Type.Declaration;
 
 pub fn run(comptime B: type) !void {
     // Set up prerequisites/options.
-    const ally = if (@hasDecl(B, "allocator")) B.allocator else testing.allocator;
+    const ally = if (@hasDecl(B, "allocator")) B.allocator else @compileError("missing `allocator` declaration");
     const tests = if (@hasDecl(B, "tests")) B.tests else @compileError("missing `tests` declaration");
-    const target_types = if (@hasDecl(B, "target_types")) B.target_types else [_]type{{}};
-    const min_iterations = if (@hasDecl(B, "min_iterations")) B.min_iterations else 10000;
-    const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else 100000;
+    const target_types = if (@hasDecl(B, "target_types")) B.target_types else @compileError("missing `target_types` declaration");
+    const min_iterations = if (@hasDecl(B, "min_iterations")) B.min_iterations else @compileError("missing `min_iterations` declaration");
+    const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else @compileError("missing `max_iterations` declaration");
     const max_time = 500 * time.ns_per_ms;
 
     // Get functions to benchmark.
