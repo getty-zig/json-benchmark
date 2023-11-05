@@ -2,15 +2,8 @@
 
 const std = @import("std");
 
-const debug = std.debug;
-const io = std.io;
-const math = std.math;
-const mem = std.mem;
-const meta = std.meta;
-const testing = std.testing;
-const time = std.time;
-
 const Decl = std.builtin.Type.Declaration;
+const time = std.time;
 
 pub fn run(comptime B: type) !void {
     // Set up prerequisites/options.
@@ -24,7 +17,7 @@ pub fn run(comptime B: type) !void {
     // Get functions to benchmark.
     const functions = comptime functions: {
         var functions: []const Decl = &[_]Decl{};
-        for (meta.declarations(B)) |decl| {
+        for (std.meta.declarations(B)) |decl| {
             if (@typeInfo(@TypeOf(@field(B, decl.name))) != .Fn)
                 continue;
             functions = functions ++ [_]Decl{decl};
@@ -36,7 +29,7 @@ pub fn run(comptime B: type) !void {
         @compileError("No benchmarks to run.");
 
     const min_width = blk: {
-        const writer = io.null_writer;
+        const writer = std.io.null_writer;
         var res = [_]u64{ 0, 0, 0, 0, 0 };
         res = try printBenchmark(
             writer,
@@ -51,7 +44,7 @@ pub fn run(comptime B: type) !void {
         inline for (functions) |f| {
             var i: usize = 0;
             while (i < tests.len) : (i += 1) {
-                const max = math.maxInt(u32);
+                const max = std.math.maxInt(u32);
                 res = if (i < tests.len) blk2: {
                     const arg_name = formatter("{s}", tests[i].name);
                     break :blk2 try printBenchmark(writer, res, f.name, arg_name, max, max, max, max);
@@ -85,7 +78,7 @@ pub fn run(comptime B: type) !void {
     inline for (tests, 0..) |t, index| outer: {
         inline for (functions) |def| {
             var runtimes: [max_iterations]u64 = undefined;
-            var min: u64 = math.maxInt(u64);
+            var min: u64 = std.math.maxInt(u64);
             var max: u64 = 0;
             var runtime_sum: u128 = 0;
 
@@ -241,11 +234,11 @@ fn alignedPrint(
 ) !u64 {
     const value_len = std.fmt.count(fmt, args);
 
-    var cow = io.countingWriter(writer);
+    var cow = std.io.countingWriter(writer);
     if (dir == .right)
-        try cow.writer().writeByteNTimes(' ', math.sub(u64, width, value_len) catch 0);
+        try cow.writer().writeByteNTimes(' ', std.math.sub(u64, width, value_len) catch 0);
     try cow.writer().print(fmt, args);
     if (dir == .left)
-        try cow.writer().writeByteNTimes(' ', math.sub(u64, width, value_len) catch 0);
+        try cow.writer().writeByteNTimes(' ', std.math.sub(u64, width, value_len) catch 0);
     return cow.bytes_written;
 }
