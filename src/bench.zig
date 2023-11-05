@@ -13,6 +13,7 @@ const time = std.time;
 const Decl = std.builtin.Type.Declaration;
 
 pub fn run(comptime B: type) !void {
+    // Set up prerequisites/options.
     const ally = if (@hasDecl(B, "allocator")) B.allocator else testing.allocator;
     const types = if (@hasDecl(B, "types")) B.types else [_]type{{}};
     const args = if (@hasDecl(B, "args")) B.args else [_]void{{}};
@@ -21,15 +22,16 @@ pub fn run(comptime B: type) !void {
     const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else 100000;
     const max_time = 500 * time.ns_per_ms;
 
-    const functions = comptime blk: {
-        var res: []const Decl = &[_]Decl{};
+    // Get functions to benchmark.
+    const functions = comptime functions: {
+        var functions: []const Decl = &[_]Decl{};
         for (meta.declarations(B)) |decl| {
             if (@typeInfo(@TypeOf(@field(B, decl.name))) != .Fn)
                 continue;
-            res = res ++ [_]Decl{decl};
+            functions = functions ++ [_]Decl{decl};
         }
 
-        break :blk res;
+        break :functions functions;
     };
     if (functions.len == 0)
         @compileError("No benchmarks to run.");
@@ -62,6 +64,7 @@ pub fn run(comptime B: type) !void {
         break :blk res;
     };
 
+    // Print results header.
     var _stderr = std.io.bufferedWriter(std.io.getStdErr().writer());
     const stderr = _stderr.writer();
     try stderr.writeAll(" \n");
@@ -83,8 +86,8 @@ pub fn run(comptime B: type) !void {
     try stderr.context.flush();
 
     var timer = try time.Timer.start();
-    inline for (functions) |def| {
-        inline for (args, 0..) |arg, index| {
+    inline for (args, 0..) |arg, index| {
+        inline for (functions) |def| {
             var runtimes: [max_iterations]u64 = undefined;
             var min: u64 = math.maxInt(u64);
             var max: u64 = 0;
