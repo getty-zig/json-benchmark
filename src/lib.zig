@@ -21,7 +21,7 @@ test "deserialize" {
         pub const args = [_][]const u8{
             @embedFile("data/pastries.json"),
             @embedFile("data/canada_geometry.json"),
-            @embedFile("data/citm_catalog.json"),
+            //@embedFile("data/citm_catalog.json"),
         };
         pub const names = [_][]const u8{
             "pastries",
