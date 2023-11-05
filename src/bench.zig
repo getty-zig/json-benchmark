@@ -42,7 +42,7 @@ pub fn run(comptime B: type) !void {
         res = try printBenchmark(
             writer,
             res,
-            "Benchmark",
+            "name",
             formatter("{s}", ""),
             formatter("{s}", "Iterations"),
             formatter("{s}", "Min(ms)"),
@@ -71,17 +71,13 @@ pub fn run(comptime B: type) !void {
     _ = try printBenchmark(
         stderr,
         min_width,
-        "Benchmark",
+        "name",
         formatter("{s}", ""),
         formatter("{s}", "Iterations"),
         formatter("{s}", "Min(ms)"),
         formatter("{s}", "Max(ms)"),
         formatter("{s}", "Mean(ms)"),
     );
-    try stderr.writeAll("\n");
-    for (min_width) |w|
-        try stderr.writeByteNTimes('-', w);
-    try stderr.writeByteNTimes('-', min_width.len - 1);
     try stderr.writeAll("\n");
     try stderr.context.flush();
 
