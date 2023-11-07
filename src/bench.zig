@@ -21,31 +21,30 @@ pub fn run(comptime B: type) !void {
     var stderr_buffered_writer = std.io.bufferedWriter(std.io.getStdErr().writer());
     const writer = stderr_buffered_writer.writer();
 
-    {
-        // The leading ' ' character is required in order to avoid the newlines
-        // being eaten up.
-        try writer.writeAll(" \n\n");
+    // The leading ' ' character is required in order to avoid the newlines
+    // being eaten up.
+    try writer.writeAll(" \n\n");
 
-        _ = try printBenchmark(
-            writer,
-            min_widths,
-            "name",
-            formatter("{s}", ""),
-            formatter("{s}", "iterations"),
-            formatter("{s}", "min time"),
-            formatter("{s}", "max time"),
-            formatter("{s}", "mean time"),
-        );
+    _ = try printBenchmark(
+        writer,
+        min_widths,
+        "name",
+        formatter("{s}", ""),
+        formatter("{s}", "iterations"),
+        formatter("{s}", "min time"),
+        formatter("{s}", "max time"),
+        formatter("{s}", "mean time"),
+    );
 
-        try writer.writeAll("\n");
+    try writer.writeAll("\n");
 
-        try writer.context.flush();
-    }
+    try writer.context.flush();
 
+    // Run benchmarks
     var timer = try time.Timer.start();
 
     inline for (tests, 0..) |t, index| outer: {
-        inline for (funcs) |def| {
+        inline for (funcs) |f| {
             var runtimes: [max_iterations]u64 = undefined;
             var min: u64 = std.math.maxInt(u64);
             var max: u64 = 0;
@@ -55,7 +54,7 @@ pub fn run(comptime B: type) !void {
             while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
                 // Run benchmark and store runtime (in nanoseconds).
                 timer.reset();
-                const res = @field(B, def.name)(ally, target_types[index], t.data);
+                const res = @field(B, f.name)(ally, target_types[index], t.data);
                 runtimes[i] = timer.read();
 
                 // Add runtime to sum.
@@ -91,7 +90,7 @@ pub fn run(comptime B: type) !void {
                     _ = try printBenchmark(
                         writer,
                         min_widths,
-                        def.name,
+                        f.name,
                         arg_name,
                         formatter("{s}", "N/A"),
                         formatter("{s}", "N/A"),
@@ -102,7 +101,7 @@ pub fn run(comptime B: type) !void {
                     _ = try printBenchmark(
                         writer,
                         min_widths,
-                        def.name,
+                        f.name,
                         arg_name,
                         i,
                         formatter("{d}ms", min / time.ns_per_ms),
@@ -114,7 +113,7 @@ pub fn run(comptime B: type) !void {
                 _ = try printBenchmark(
                     writer,
                     min_widths,
-                    def.name,
+                    f.name,
                     index,
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
@@ -125,7 +124,7 @@ pub fn run(comptime B: type) !void {
                 _ = try printBenchmark(
                     writer,
                     min_widths,
-                    def.name,
+                    f.name,
                     index,
                     i,
                     formatter("{d}ms", min / time.ns_per_ms),
@@ -212,17 +211,17 @@ fn printBenchmark(
     writer: anytype,
     min_widths: [5]u64,
     func_name: []const u8,
-    arg_name: anytype,
+    test_name: anytype,
     iterations: anytype,
     min_runtime: anytype,
     max_runtime: anytype,
     mean_runtime: anytype,
 ) ![5]u64 {
-    const arg_len = std.fmt.count("{}", .{arg_name});
+    const test_len = std.fmt.count("{}", .{test_name});
     const name_len = try alignedPrint(writer, .left, min_widths[0], "{s}{s}{}", .{
         func_name,
-        "/"[0..@intFromBool(arg_len != 0)],
-        arg_name,
+        "/"[0..@intFromBool(test_len != 0)],
+        test_name,
     });
     try writer.writeAll(" ");
     const it_len = try alignedPrint(writer, .right, min_widths[1], "{}", .{iterations});
