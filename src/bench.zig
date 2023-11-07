@@ -18,21 +18,29 @@ pub fn run(comptime B: type) !void {
     const min_widths = getMinWidths(&tests, funcs);
 
     // Print results header.
-    var _stderr = std.io.bufferedWriter(std.io.getStdErr().writer());
-    const stderr = _stderr.writer();
-    try stderr.writeAll(" \n");
-    _ = try printBenchmark(
-        stderr,
-        min_widths,
-        "name",
-        formatter("{s}", ""),
-        formatter("{s}", "iterations"),
-        formatter("{s}", "min time"),
-        formatter("{s}", "max time"),
-        formatter("{s}", "mean time"),
-    );
-    try stderr.writeAll("\n");
-    try stderr.context.flush();
+    var stderr_buffered_writer = std.io.bufferedWriter(std.io.getStdErr().writer());
+    const writer = stderr_buffered_writer.writer();
+
+    {
+        // The leading ' ' character is required in order to avoid the newlines
+        // being eaten up.
+        try writer.writeAll(" \n\n");
+
+        _ = try printBenchmark(
+            writer,
+            min_widths,
+            "name",
+            formatter("{s}", ""),
+            formatter("{s}", "iterations"),
+            formatter("{s}", "min time"),
+            formatter("{s}", "max time"),
+            formatter("{s}", "mean time"),
+        );
+
+        try writer.writeAll("\n");
+
+        try writer.context.flush();
+    }
 
     var timer = try time.Timer.start();
 
@@ -81,7 +89,7 @@ pub fn run(comptime B: type) !void {
 
                 if (min == 0 and max == 0) {
                     _ = try printBenchmark(
-                        stderr,
+                        writer,
                         min_widths,
                         def.name,
                         arg_name,
@@ -92,7 +100,7 @@ pub fn run(comptime B: type) !void {
                     );
                 } else {
                     _ = try printBenchmark(
-                        stderr,
+                        writer,
                         min_widths,
                         def.name,
                         arg_name,
@@ -104,7 +112,7 @@ pub fn run(comptime B: type) !void {
                 }
             } else if (min == 0 and max == 0) {
                 _ = try printBenchmark(
-                    stderr,
+                    writer,
                     min_widths,
                     def.name,
                     index,
@@ -115,7 +123,7 @@ pub fn run(comptime B: type) !void {
                 );
             } else {
                 _ = try printBenchmark(
-                    stderr,
+                    writer,
                     min_widths,
                     def.name,
                     index,
@@ -125,8 +133,8 @@ pub fn run(comptime B: type) !void {
                     formatter("{d}ms", runtime_mean / time.ns_per_ms),
                 );
             }
-            try stderr.writeAll("\n");
-            try stderr.context.flush();
+            try writer.writeAll("\n");
+            try writer.context.flush();
         }
     }
 }
