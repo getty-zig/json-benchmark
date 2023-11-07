@@ -5,30 +5,8 @@ const std = @import("std");
 const Decl = std.builtin.Type.Declaration;
 const time = std.time;
 
-fn getBenchmarkFuncs(comptime B: type) []const Decl {
-    comptime {
-        var funcs: []const Decl = &[_]Decl{};
-
-        for (std.meta.declarations(B)) |decl| {
-            const d = @field(B, decl.name);
-            const D = @TypeOf(d);
-            const decl_is_fn = @typeInfo(D) == .Fn;
-
-            if (decl_is_fn) {
-                funcs = funcs ++ [_]Decl{decl};
-            }
-        }
-
-        if (funcs.len == 0) {
-            @compileError("no benchmarks to run");
-        }
-
-        return funcs;
-    }
-}
-
 pub fn run(comptime B: type) !void {
-    // Set up configuration options.
+    // Set up configuration options
     const ally = if (@hasDecl(B, "allocator")) B.allocator else @compileError("missing `allocator` declaration");
     const tests = if (@hasDecl(B, "tests")) B.tests else @compileError("missing `tests` declaration");
     const target_types = if (@hasDecl(B, "target_types")) B.target_types else @compileError("missing `target_types` declaration");
@@ -36,38 +14,8 @@ pub fn run(comptime B: type) !void {
     const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else @compileError("missing `max_iterations` declaration");
     const max_time = if (@hasDecl(B, "max_time")) B.max_time else 500 * time.ns_per_ms;
 
-    // Gather benchmark functions.
     const funcs = comptime getBenchmarkFuncs(B);
-
-    const min_widths = min_widths: {
-        const writer = std.io.null_writer;
-        var min_widths = [_]u64{ 0, 0, 0, 0, 0 };
-
-        min_widths = try printBenchmark(
-            writer,
-            min_widths,
-            "name",
-            formatter("{s}", ""),
-            formatter("{s}", "n"),
-            formatter("{s}", "min time"),
-            formatter("{s}", "max time"),
-            formatter("{s}", "mean time"),
-        );
-        inline for (funcs) |f| {
-            var i: usize = 0;
-            while (i < tests.len) : (i += 1) {
-                const max = std.math.maxInt(u32);
-                min_widths = if (i < tests.len) blk2: {
-                    const arg_name = formatter("{s}", tests[i].name);
-                    break :blk2 try printBenchmark(writer, min_widths, f.name, arg_name, max, max, max, max);
-                } else blk2: {
-                    break :blk2 try printBenchmark(writer, min_widths, f.name, i, max, max, max, max);
-                };
-            }
-        }
-
-        break :min_widths min_widths;
-    };
+    const min_widths = getMinWidths(&tests, funcs);
 
     // Print results header.
     var _stderr = std.io.bufferedWriter(std.io.getStdErr().writer());
@@ -181,6 +129,75 @@ pub fn run(comptime B: type) !void {
             try stderr.context.flush();
         }
     }
+}
+
+pub const TestCase = struct {
+    // The name of the test case.
+    name: []const u8,
+
+    // The data of the test case.
+    //
+    // Typically, this will be provided via @embedFile.
+    data: []const u8,
+};
+
+fn getBenchmarkFuncs(comptime B: type) []const Decl {
+    comptime {
+        var funcs: []const Decl = &[_]Decl{};
+
+        for (std.meta.declarations(B)) |decl| {
+            const d = @field(B, decl.name);
+            const D = @TypeOf(d);
+            const decl_is_fn = @typeInfo(D) == .Fn;
+
+            if (decl_is_fn) {
+                funcs = funcs ++ [_]Decl{decl};
+            }
+        }
+
+        if (funcs.len == 0) {
+            @compileError("no benchmarks to run");
+        }
+
+        return funcs;
+    }
+}
+
+fn getMinWidths(tests: []const TestCase, comptime funcs: []const Decl) [5]u64 {
+    const writer = std.io.null_writer;
+    var min_widths = [_]u64{ 0, 0, 0, 0, 0 };
+
+    // Header names
+    min_widths = printBenchmark(
+        writer,
+        min_widths,
+        "name",
+        formatter("{s}", ""),
+        formatter("{s}", "n"),
+        formatter("{s}", "min time"),
+        formatter("{s}", "max time"),
+        formatter("{s}", "mean time"),
+    ) catch unreachable; // UNREACHABLE: std.io.null_writer cannot fail
+
+    // Tests and results
+    inline for (funcs) |f| {
+        for (0..tests.len) |i| {
+            const max = std.math.maxInt(u32);
+
+            min_widths = printBenchmark(
+                writer,
+                min_widths,
+                f.name,
+                formatter("{s}", tests[i].name),
+                max,
+                max,
+                max,
+                max,
+            ) catch unreachable; // UNREACHABLE: std.io.null_writer cannot fail
+        }
+    }
+
+    return min_widths;
 }
 
 fn printBenchmark(
