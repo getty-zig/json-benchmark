@@ -13,20 +13,29 @@ test "deserialize" {
 
     try bench.run(struct {
         pub const allocator = heap.c_allocator;
-        pub const types = [_]type{
+
+        pub const tests = [_]struct {
+            name: []const u8,
+            data: []const u8,
+        }{
+            .{
+                .name = "pastries",
+                .data = @embedFile("data/pastries.json"),
+            },
+            .{
+                .name = "canada_geometry",
+                .data = @embedFile("data/canada_geometry.json"),
+            },
+            .{
+                .name = "citm_catalog",
+                .data = @embedFile("data/citm_catalog.json"),
+            },
+        };
+
+        pub const target_types = [_]type{
             data.Pastries,
             data.Canada,
             data.CITM,
-        };
-        pub const args = [_][]const u8{
-            @embedFile("data/pastries.json"),
-            @embedFile("data/canada_geometry.json"),
-            @embedFile("data/citm_catalog.json"),
-        };
-        pub const names = [_][]const u8{
-            "pastries",
-            "canada",
-            "citm_catalog",
         };
 
         pub const min_iterations = iterations;
