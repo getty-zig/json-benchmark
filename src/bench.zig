@@ -39,12 +39,13 @@ pub fn run(comptime B: type) !void {
     // Gather benchmark functions.
     const funcs = comptime getBenchmarkFuncs(B);
 
-    const min_width = blk: {
+    const min_widths = min_widths: {
         const writer = std.io.null_writer;
-        var res = [_]u64{ 0, 0, 0, 0, 0 };
-        res = try printBenchmark(
+        var min_widths = [_]u64{ 0, 0, 0, 0, 0 };
+
+        min_widths = try printBenchmark(
             writer,
-            res,
+            min_widths,
             "name",
             formatter("{s}", ""),
             formatter("{s}", "n"),
@@ -56,15 +57,16 @@ pub fn run(comptime B: type) !void {
             var i: usize = 0;
             while (i < tests.len) : (i += 1) {
                 const max = std.math.maxInt(u32);
-                res = if (i < tests.len) blk2: {
+                min_widths = if (i < tests.len) blk2: {
                     const arg_name = formatter("{s}", tests[i].name);
-                    break :blk2 try printBenchmark(writer, res, f.name, arg_name, max, max, max, max);
+                    break :blk2 try printBenchmark(writer, min_widths, f.name, arg_name, max, max, max, max);
                 } else blk2: {
-                    break :blk2 try printBenchmark(writer, res, f.name, i, max, max, max, max);
+                    break :blk2 try printBenchmark(writer, min_widths, f.name, i, max, max, max, max);
                 };
             }
         }
-        break :blk res;
+
+        break :min_widths min_widths;
     };
 
     // Print results header.
@@ -73,7 +75,7 @@ pub fn run(comptime B: type) !void {
     try stderr.writeAll(" \n");
     _ = try printBenchmark(
         stderr,
-        min_width,
+        min_widths,
         "name",
         formatter("{s}", ""),
         formatter("{s}", "iterations"),
@@ -132,7 +134,7 @@ pub fn run(comptime B: type) !void {
                 if (min == 0 and max == 0) {
                     _ = try printBenchmark(
                         stderr,
-                        min_width,
+                        min_widths,
                         def.name,
                         arg_name,
                         formatter("{s}", "N/A"),
@@ -143,7 +145,7 @@ pub fn run(comptime B: type) !void {
                 } else {
                     _ = try printBenchmark(
                         stderr,
-                        min_width,
+                        min_widths,
                         def.name,
                         arg_name,
                         i,
@@ -155,7 +157,7 @@ pub fn run(comptime B: type) !void {
             } else if (min == 0 and max == 0) {
                 _ = try printBenchmark(
                     stderr,
-                    min_width,
+                    min_widths,
                     def.name,
                     index,
                     formatter("{s}", "N/A"),
@@ -166,7 +168,7 @@ pub fn run(comptime B: type) !void {
             } else {
                 _ = try printBenchmark(
                     stderr,
-                    min_width,
+                    min_widths,
                     def.name,
                     index,
                     i,
@@ -215,25 +217,23 @@ fn printBenchmark(
     };
 }
 
-fn formatter(comptime fmt_str: []const u8, value: anytype) Formatter(fmt_str, @TypeOf(value)) {
-    return .{ .value = value };
-}
-
 fn Formatter(comptime fmt_str: []const u8, comptime T: type) type {
     return struct {
         value: T,
 
         pub fn format(
             self: @This(),
-            comptime fmt: []const u8,
-            options: std.fmt.FormatOptions,
+            comptime _: []const u8,
+            _: std.fmt.FormatOptions,
             writer: anytype,
         ) !void {
-            _ = fmt;
-            _ = options;
             try std.fmt.format(writer, fmt_str, .{self.value});
         }
     };
+}
+
+fn formatter(comptime fmt_str: []const u8, value: anytype) Formatter(fmt_str, @TypeOf(value)) {
+    return .{ .value = value };
 }
 
 fn alignedPrint(
