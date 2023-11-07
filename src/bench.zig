@@ -5,8 +5,30 @@ const std = @import("std");
 const Decl = std.builtin.Type.Declaration;
 const time = std.time;
 
+fn getBenchmarkFuncs(comptime B: type) []const Decl {
+    comptime {
+        var funcs: []const Decl = &[_]Decl{};
+
+        for (std.meta.declarations(B)) |decl| {
+            const d = @field(B, decl.name);
+            const D = @TypeOf(d);
+            const decl_is_fn = @typeInfo(D) == .Fn;
+
+            if (decl_is_fn) {
+                funcs = funcs ++ [_]Decl{decl};
+            }
+        }
+
+        if (funcs.len == 0) {
+            @compileError("no benchmarks to run");
+        }
+
+        return funcs;
+    }
+}
+
 pub fn run(comptime B: type) !void {
-    // Set up prerequisites/options.
+    // Set up configuration options.
     const ally = if (@hasDecl(B, "allocator")) B.allocator else @compileError("missing `allocator` declaration");
     const tests = if (@hasDecl(B, "tests")) B.tests else @compileError("missing `tests` declaration");
     const target_types = if (@hasDecl(B, "target_types")) B.target_types else @compileError("missing `target_types` declaration");
@@ -14,19 +36,8 @@ pub fn run(comptime B: type) !void {
     const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else @compileError("missing `max_iterations` declaration");
     const max_time = if (@hasDecl(B, "max_time")) B.max_time else 500 * time.ns_per_ms;
 
-    // Get functions to benchmark.
-    const functions = comptime functions: {
-        var functions: []const Decl = &[_]Decl{};
-        for (std.meta.declarations(B)) |decl| {
-            if (@typeInfo(@TypeOf(@field(B, decl.name))) != .Fn)
-                continue;
-            functions = functions ++ [_]Decl{decl};
-        }
-
-        break :functions functions;
-    };
-    if (functions.len == 0)
-        @compileError("No benchmarks to run.");
+    // Gather benchmark functions.
+    const funcs = comptime getBenchmarkFuncs(B);
 
     const min_width = blk: {
         const writer = std.io.null_writer;
@@ -41,7 +52,7 @@ pub fn run(comptime B: type) !void {
             formatter("{s}", "max time"),
             formatter("{s}", "mean time"),
         );
-        inline for (functions) |f| {
+        inline for (funcs) |f| {
             var i: usize = 0;
             while (i < tests.len) : (i += 1) {
                 const max = std.math.maxInt(u32);
@@ -76,7 +87,7 @@ pub fn run(comptime B: type) !void {
     var timer = try time.Timer.start();
 
     inline for (tests, 0..) |t, index| outer: {
-        inline for (functions) |def| {
+        inline for (funcs) |def| {
             var runtimes: [max_iterations]u64 = undefined;
             var min: u64 = std.math.maxInt(u64);
             var max: u64 = 0;
