@@ -12,7 +12,7 @@ pub fn run(comptime B: type) !void {
     const target_types = if (@hasDecl(B, "target_types")) B.target_types else @compileError("missing `target_types` declaration");
     const min_iterations = if (@hasDecl(B, "min_iterations")) B.min_iterations else @compileError("missing `min_iterations` declaration");
     const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else @compileError("missing `max_iterations` declaration");
-    const max_time = 500 * time.ns_per_ms;
+    const max_time = if (@hasDecl(B, "max_time")) B.max_time else 500 * time.ns_per_ms;
 
     // Get functions to benchmark.
     const functions = comptime functions: {
