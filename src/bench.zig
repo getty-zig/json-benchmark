@@ -32,8 +32,8 @@ pub fn run(comptime B: type) !void {
         formatter("{s}", ""),
         formatter("{s}", "iterations"),
         formatter("{s}", "min time"),
-        formatter("{s}", "max time"),
         formatter("{s}", "mean time"),
+        formatter("{s}", "max time"),
     );
 
     try writer.writeAll("\n");
@@ -80,7 +80,7 @@ pub fn run(comptime B: type) !void {
             if (min == 0 and max == 0) {
                 _ = try printSkippedBenchmark(writer, min_widths, f.name, test_name);
             } else {
-                const runtime_mean: u64 = @intCast(runtime_sum / j);
+                const mean: u64 = @intCast(runtime_sum / j);
 
                 _ = try printBenchmark(
                     writer,
@@ -89,8 +89,8 @@ pub fn run(comptime B: type) !void {
                     test_name,
                     j,
                     min,
+                    mean,
                     max,
-                    runtime_mean,
                 );
             }
 
@@ -148,8 +148,8 @@ fn getMinWidths(tests: []const TestCase, comptime funcs: []const Decl) [5]u64 {
         formatter("{s}", ""),
         formatter("{s}", "n"),
         formatter("{s}", "min time"),
-        formatter("{s}", "max time"),
         formatter("{s}", "mean time"),
+        formatter("{s}", "max time"),
     ) catch unreachable; // UNREACHABLE: std.io.null_writer cannot fail
 
     // Tests and results
@@ -184,8 +184,8 @@ fn printBenchmarkGeneral(
     test_name: anytype,
     iterations: anytype,
     min_runtime: anytype,
-    max_runtime: anytype,
     mean_runtime: anytype,
+    max_runtime: anytype,
 ) ![5]u64 {
     const test_len = std.fmt.count("{}", .{test_name});
     const name_len = try alignedPrint(writer, .left, min_widths[0], "{s}{s}{}", .{
@@ -198,16 +198,16 @@ fn printBenchmarkGeneral(
     try writer.writeAll(" ");
     const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "{}", .{min_runtime});
     try writer.writeAll(" ");
-    const max_runtime_len = try alignedPrint(writer, .right, min_widths[3], "{}", .{max_runtime});
+    const mean_runtime_len = try alignedPrint(writer, .right, min_widths[3], "{}", .{mean_runtime});
     try writer.writeAll(" ");
-    const mean_runtime_len = try alignedPrint(writer, .right, min_widths[4], "{}", .{mean_runtime});
+    const max_runtime_len = try alignedPrint(writer, .right, min_widths[4], "{}", .{max_runtime});
 
     return [_]u64{
         name_len,
         it_len,
         min_runtime_len,
-        max_runtime_len,
         mean_runtime_len,
+        max_runtime_len,
     };
 }
 
@@ -218,8 +218,8 @@ fn printBenchmark(
     test_name: anytype,
     iterations: u64,
     min_runtime: u64,
-    max_runtime: u64,
     mean_runtime: u64,
+    max_runtime: u64,
 ) ![5]u64 {
     const test_len = std.fmt.count("{}", .{test_name});
     const name_len = try alignedPrint(writer, .left, min_widths[0], "{s}{s}{}", .{
@@ -233,16 +233,16 @@ fn printBenchmark(
     try writer.writeAll(" ");
     const min_runtime_len = try formatTime(writer, min_widths[2], min_runtime);
     try writer.writeAll(" ");
-    const max_runtime_len = try formatTime(writer, min_widths[3], max_runtime);
+    const mean_runtime_len = try formatTime(writer, min_widths[3], mean_runtime);
     try writer.writeAll(" ");
-    const mean_runtime_len = try formatTime(writer, min_widths[4], mean_runtime);
+    const max_runtime_len = try formatTime(writer, min_widths[4], max_runtime);
 
     return [_]u64{
         name_len,
         it_len,
         min_runtime_len,
-        max_runtime_len,
         mean_runtime_len,
+        max_runtime_len,
     };
 }
 
@@ -269,16 +269,16 @@ fn printSkippedBenchmark(
     try writer.writeAll(" ");
     const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "SKIP", .{}); // min
     try writer.writeAll(" ");
-    const max_runtime_len = try alignedPrint(writer, .right, min_widths[3], "SKIP", .{}); // max
+    const mean_runtime_len = try alignedPrint(writer, .right, min_widths[3], "SKIP", .{}); // mean
     try writer.writeAll(" ");
-    const mean_runtime_len = try alignedPrint(writer, .right, min_widths[4], "SKIP", .{}); // mean
+    const max_runtime_len = try alignedPrint(writer, .right, min_widths[4], "SKIP", .{}); // max
 
     return [_]u64{
         name_len,
         it_len,
         min_runtime_len,
-        max_runtime_len,
         mean_runtime_len,
+        max_runtime_len,
     };
 }
 
