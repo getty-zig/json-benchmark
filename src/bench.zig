@@ -193,13 +193,13 @@ fn printBenchmarkGeneral(
         "/"[0..@intFromBool(test_len != 0)],
         test_name,
     });
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const it_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{iterations});
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "{}", .{min_runtime});
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const mean_runtime_len = try alignedPrint(writer, .right, min_widths[3], "{}", .{mean_runtime});
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const max_runtime_len = try alignedPrint(writer, .right, min_widths[4], "{}", .{max_runtime});
 
     return [_]u64{
@@ -228,13 +228,13 @@ fn printBenchmark(
         test_name,
     });
 
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const it_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{iterations});
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const min_runtime_len = try formatTime(writer, min_widths[2], min_runtime);
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const mean_runtime_len = try formatTime(writer, min_widths[3], mean_runtime);
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const max_runtime_len = try formatTime(writer, min_widths[4], max_runtime);
 
     return [_]u64{
@@ -264,13 +264,13 @@ fn printSkippedBenchmark(
         },
     );
 
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const it_len = try alignedPrint(writer, .right, min_widths[1], "SKIP", .{}); // iterations
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "SKIP", .{}); // min
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const mean_runtime_len = try alignedPrint(writer, .right, min_widths[3], "SKIP", .{}); // mean
-    try writer.writeAll(" ");
+    try writer.writeAll("  ");
     const max_runtime_len = try alignedPrint(writer, .right, min_widths[4], "SKIP", .{}); // max
 
     return [_]u64{
