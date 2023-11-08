@@ -50,22 +50,22 @@ pub fn run(comptime B: type) !void {
             var max: u64 = 0;
             var runtime_sum: u128 = 0;
 
-            var j: usize = 0;
-            while (j < min_n or (j < max_n and runtime_sum < max_time)) : (j += 1) {
+            var n: usize = 0;
+            while (n < min_n or (n < max_n and runtime_sum < max_time)) : (n += 1) {
                 // Run benchmark and store runtime (in nanoseconds).
                 timer.reset();
                 const res = @field(B, f.name)(ally, target_types[i], t.data);
-                runtimes[j] = timer.read();
+                runtimes[n] = timer.read();
 
                 // Add runtime to sum.
-                runtime_sum += runtimes[j];
+                runtime_sum += runtimes[n];
 
                 // Set mininum and maximum runtimes.
-                if (runtimes[j] < min) {
-                    min = if (res == error.Skipped) 0 else runtimes[j];
+                if (runtimes[n] < min) {
+                    min = if (res == error.Skipped) 0 else runtimes[n];
                 }
-                if (runtimes[j] > max) {
-                    max = if (res == error.Skipped) 0 else runtimes[j];
+                if (runtimes[n] > max) {
+                    max = if (res == error.Skipped) 0 else runtimes[n];
                 }
 
                 // Avoid return value optimizations.
@@ -80,14 +80,14 @@ pub fn run(comptime B: type) !void {
             if (min == 0 and max == 0) {
                 _ = try printSkippedBenchmark(writer, min_widths, f.name, test_name);
             } else {
-                const mean: u64 = @intCast(runtime_sum / j);
+                const mean: u64 = @intCast(runtime_sum / n);
 
                 _ = try printBenchmark(
                     writer,
                     min_widths,
                     f.name,
                     test_name,
-                    j,
+                    n,
                     min,
                     mean,
                     max,
