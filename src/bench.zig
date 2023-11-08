@@ -81,19 +81,13 @@ pub fn run(comptime B: type) !void {
             const test_name = formatter("{s}", tests[i].name);
 
             if (min == 0 and max == 0) {
-                // Skipped tests.
-                _ = try printBenchmark(
+                _ = try printSkippedBenchmark(
                     writer,
                     min_widths,
                     f.name,
                     test_name,
-                    formatter("{s}", "N/A"),
-                    formatter("{s}", "N/A"),
-                    formatter("{s}", "N/A"),
-                    formatter("{s}", "N/A"),
                 );
             } else {
-                // Benchmarked tests.
                 _ = try printBenchmark(
                     writer,
                     min_widths,
@@ -223,6 +217,42 @@ fn printBenchmark(
     const max_runtime_len = try alignedPrint(writer, .right, min_widths[3], "{}", .{max_runtime});
     try writer.writeAll(" ");
     const mean_runtime_len = try alignedPrint(writer, .right, min_widths[4], "{}", .{mean_runtime});
+
+    return [_]u64{
+        name_len,
+        it_len,
+        min_runtime_len,
+        max_runtime_len,
+        mean_runtime_len,
+    };
+}
+
+fn printSkippedBenchmark(
+    writer: anytype,
+    min_widths: [5]u64,
+    func_name: []const u8,
+    test_name: anytype,
+) ![5]u64 {
+    const name_len = try alignedPrint(
+        writer,
+        .left,
+        min_widths[0],
+        "{s}{s}{}",
+        .{
+            func_name,
+            "/"[0..@intFromBool(std.fmt.count("{}", .{test_name}) != 0)],
+            test_name,
+        },
+    );
+
+    try writer.writeAll(" ");
+    const it_len = try alignedPrint(writer, .right, min_widths[1], "SKIP", .{}); // iterations
+    try writer.writeAll(" ");
+    const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "SKIP", .{}); // min
+    try writer.writeAll(" ");
+    const max_runtime_len = try alignedPrint(writer, .right, min_widths[3], "SKIP", .{}); // max
+    try writer.writeAll(" ");
+    const mean_runtime_len = try alignedPrint(writer, .right, min_widths[4], "SKIP", .{}); // mean
 
     return [_]u64{
         name_len,
