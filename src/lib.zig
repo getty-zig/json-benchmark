@@ -4,20 +4,14 @@ const std = @import("std");
 const bench = @import("bench.zig");
 const data = @import("data.zig");
 
-const heap = std.heap;
-const mem = std.mem;
-
 test "deserialize" {
-    const deserializations: comptime_int = 1024;
-    const iterations: comptime_int = 10;
+    const deserializations: comptime_int = 1;
+    const iterations: comptime_int = 24;
 
     try bench.run(struct {
-        pub const allocator = heap.c_allocator;
+        pub const allocator = std.heap.c_allocator;
 
-        pub const tests = [_]struct {
-            name: []const u8,
-            data: []const u8,
-        }{
+        pub const tests = [_]bench.TestCase{
             .{
                 .name = "pastries",
                 .data = @embedFile("data/pastries.json"),
@@ -42,7 +36,7 @@ test "deserialize" {
         pub const max_iterations = iterations;
 
         pub fn @"de/getty"(
-            ally: mem.Allocator,
+            ally: std.mem.Allocator,
             comptime T: type,
             input: []const u8,
         ) !void {
@@ -55,7 +49,7 @@ test "deserialize" {
         // NOTE: Not all test data can be benchmarked using std.json's due to
         // its lack of support for various types within the standard library.
         pub fn @"de/std"(
-            ally: mem.Allocator,
+            ally: std.mem.Allocator,
             comptime T: type,
             input: []const u8,
         ) !void {
