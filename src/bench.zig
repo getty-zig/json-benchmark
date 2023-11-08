@@ -84,14 +84,15 @@ pub fn run(comptime B: type) !void {
             const runtime_mean: u64 = @intCast(runtime_sum / j);
 
             if (i < tests.len) {
-                const arg_name = formatter("{s}", tests[i].name);
+                // Print test results.
+                const test_name = formatter("{s}", tests[i].name);
 
                 if (min == 0 and max == 0) {
                     _ = try printBenchmark(
                         writer,
                         min_widths,
                         f.name,
-                        arg_name,
+                        test_name,
                         formatter("{s}", "N/A"),
                         formatter("{s}", "N/A"),
                         formatter("{s}", "N/A"),
@@ -102,7 +103,7 @@ pub fn run(comptime B: type) !void {
                         writer,
                         min_widths,
                         f.name,
-                        arg_name,
+                        test_name,
                         j,
                         formatter("{d:.2}ms", formatTime(min)),
                         formatter("{d:.2}ms", formatTime(max)),
@@ -110,6 +111,7 @@ pub fn run(comptime B: type) !void {
                     );
                 }
             } else if (min == 0 and max == 0) {
+                // Print skipped test results.
                 _ = try printBenchmark(
                     writer,
                     min_widths,
@@ -119,19 +121,9 @@ pub fn run(comptime B: type) !void {
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
-                );
-            } else {
-                _ = try printBenchmark(
-                    writer,
-                    min_widths,
-                    f.name,
-                    i,
-                    j,
-                    formatter("{d:.2}ms", formatTime(min)),
-                    formatter("{d:.2}ms", formatTime(max)),
-                    formatter("{d:.2}ms", formatTime(runtime_mean)),
                 );
             }
+
             try writer.writeAll("\n");
             try writer.context.flush();
         }
