@@ -25,7 +25,7 @@ pub fn run(comptime B: type) !void {
     // being eaten up.
     try writer.writeAll(" \n\n");
 
-    _ = try printBenchmark(
+    _ = try printBenchmarkGeneral(
         writer,
         min_widths,
         "name",
@@ -75,28 +75,22 @@ pub fn run(comptime B: type) !void {
                 }
             }
 
-            // Compute mean.
-            const runtime_mean: u64 = @intCast(runtime_sum / j);
-
             const test_name = formatter("{s}", tests[i].name);
 
             if (min == 0 and max == 0) {
-                _ = try printSkippedBenchmark(
-                    writer,
-                    min_widths,
-                    f.name,
-                    test_name,
-                );
+                _ = try printSkippedBenchmark(writer, min_widths, f.name, test_name);
             } else {
+                const runtime_mean: u64 = @intCast(runtime_sum / j);
+
                 _ = try printBenchmark(
                     writer,
                     min_widths,
                     f.name,
                     test_name,
                     j,
-                    formatter("{d:.2}ms", formatTime(min)),
-                    formatter("{d:.2}ms", formatTime(max)),
-                    formatter("{d:.2}ms", formatTime(runtime_mean)),
+                    min,
+                    max,
+                    runtime_mean,
                 );
             }
 
@@ -104,24 +98,6 @@ pub fn run(comptime B: type) !void {
             try writer.context.flush();
         }
     }
-}
-
-fn formatTime(ns: u64) f64 {
-    const ns_float: f64 = @floatFromInt(ns);
-
-    if (ns_float >= time.ns_per_hour) {
-        return ns_float / @as(f64, @floatFromInt(time.ns_per_hour));
-    } else if (ns_float >= time.ns_per_min) {
-        return ns_float / @as(f64, @floatFromInt(time.ns_per_min));
-    } else if (ns_float >= time.ns_per_s) {
-        return ns_float / @as(f64, @floatFromInt(time.ns_per_s));
-    } else if (ns_float >= time.ns_per_ms) {
-        return ns_float / @as(f64, @floatFromInt(time.ns_per_ms));
-    } else if (ns_float >= 1000) {
-        return ns_float / @as(f64, @floatFromInt(time.ns_per_us));
-    }
-
-    return ns_float;
 }
 
 pub const TestCase = struct {
@@ -161,7 +137,7 @@ fn getMinWidths(tests: []const TestCase, comptime funcs: []const Decl) [5]u64 {
     var min_widths = [_]u64{ 0, 0, 0, 0, 0 };
 
     // Header names
-    min_widths = printBenchmark(
+    min_widths = printBenchmarkGeneral(
         writer,
         min_widths,
         "name",
@@ -177,7 +153,7 @@ fn getMinWidths(tests: []const TestCase, comptime funcs: []const Decl) [5]u64 {
         for (0..tests.len) |i| {
             const max = std.math.maxInt(u32);
 
-            min_widths = printBenchmark(
+            min_widths = printBenchmarkGeneral(
                 writer,
                 min_widths,
                 f.name,
@@ -193,7 +169,7 @@ fn getMinWidths(tests: []const TestCase, comptime funcs: []const Decl) [5]u64 {
     return min_widths;
 }
 
-fn printBenchmark(
+fn printBenchmarkGeneral(
     writer: anytype,
     min_widths: [5]u64,
     func_name: []const u8,
@@ -217,6 +193,41 @@ fn printBenchmark(
     const max_runtime_len = try alignedPrint(writer, .right, min_widths[3], "{}", .{max_runtime});
     try writer.writeAll(" ");
     const mean_runtime_len = try alignedPrint(writer, .right, min_widths[4], "{}", .{mean_runtime});
+
+    return [_]u64{
+        name_len,
+        it_len,
+        min_runtime_len,
+        max_runtime_len,
+        mean_runtime_len,
+    };
+}
+
+fn printBenchmark(
+    writer: anytype,
+    min_widths: [5]u64,
+    func_name: []const u8,
+    test_name: anytype,
+    iterations: u64,
+    min_runtime: u64,
+    max_runtime: u64,
+    mean_runtime: u64,
+) ![5]u64 {
+    const test_len = std.fmt.count("{}", .{test_name});
+    const name_len = try alignedPrint(writer, .left, min_widths[0], "{s}{s}{}", .{
+        func_name,
+        "/"[0..@intFromBool(test_len != 0)],
+        test_name,
+    });
+
+    try writer.writeAll(" ");
+    const it_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{iterations});
+    try writer.writeAll(" ");
+    const min_runtime_len = try formatTime(writer, min_widths[2], min_runtime);
+    try writer.writeAll(" ");
+    const max_runtime_len = try formatTime(writer, min_widths[3], max_runtime);
+    try writer.writeAll(" ");
+    const mean_runtime_len = try formatTime(writer, min_widths[4], mean_runtime);
 
     return [_]u64{
         name_len,
@@ -263,23 +274,58 @@ fn printSkippedBenchmark(
     };
 }
 
-fn Formatter(comptime fmt_str: []const u8, comptime T: type) type {
-    return struct {
-        value: T,
+fn formatTime(writer: anytype, min_width: u64, ns: u64) !u64 {
+    const ns_float: f64 = @floatFromInt(ns);
 
-        pub fn format(
-            self: @This(),
-            comptime _: []const u8,
-            _: std.fmt.FormatOptions,
-            writer: anytype,
-        ) !void {
-            try std.fmt.format(writer, fmt_str, .{self.value});
-        }
-    };
-}
+    if (ns_float >= time.ns_per_hour) {
+        return try alignedPrint(
+            writer,
+            .right,
+            min_width,
+            "{d:.2}hr",
+            .{ns_float / @as(f64, @floatFromInt(time.ns_per_hour))},
+        );
+    } else if (ns_float >= time.ns_per_min) {
+        return try alignedPrint(
+            writer,
+            .right,
+            min_width,
+            "{d:.2}min",
+            .{ns_float / @as(f64, @floatFromInt(time.ns_per_min))},
+        );
+    } else if (ns_float >= time.ns_per_s) {
+        return try alignedPrint(
+            writer,
+            .right,
+            min_width,
+            "{d:.2}sec",
+            .{ns_float / @as(f64, @floatFromInt(time.ns_per_s))},
+        );
+    } else if (ns_float >= time.ns_per_ms) {
+        return try alignedPrint(
+            writer,
+            .right,
+            min_width,
+            "{d:.2}ms",
+            .{ns_float / @as(f64, @floatFromInt(time.ns_per_ms))},
+        );
+    } else if (ns_float >= 1000) {
+        return try alignedPrint(
+            writer,
+            .right,
+            min_width,
+            "{d:.2}us",
+            .{ns_float / @as(f64, @floatFromInt(time.ns_per_us))},
+        );
+    }
 
-fn formatter(comptime fmt_str: []const u8, value: anytype) Formatter(fmt_str, @TypeOf(value)) {
-    return .{ .value = value };
+    return try alignedPrint(
+        writer,
+        .right,
+        min_width,
+        "{d:.2}ns",
+        .{ns_float},
+    );
 }
 
 fn alignedPrint(
@@ -298,4 +344,23 @@ fn alignedPrint(
     if (dir == .left)
         try cow.writer().writeByteNTimes(' ', std.math.sub(u64, width, value_len) catch 0);
     return cow.bytes_written;
+}
+
+fn Formatter(comptime fmt_str: []const u8, comptime T: type) type {
+    return struct {
+        value: T,
+
+        pub fn format(
+            self: @This(),
+            comptime _: []const u8,
+            _: std.fmt.FormatOptions,
+            writer: anytype,
+        ) !void {
+            try std.fmt.format(writer, fmt_str, .{self.value});
+        }
+    };
+}
+
+fn formatter(comptime fmt_str: []const u8, value: anytype) Formatter(fmt_str, @TypeOf(value)) {
+    return .{ .value = value };
 }
