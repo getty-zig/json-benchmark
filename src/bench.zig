@@ -43,29 +43,29 @@ pub fn run(comptime B: type) !void {
     // Run benchmarks
     var timer = try time.Timer.start();
 
-    inline for (tests, 0..) |t, index| outer: {
+    inline for (tests, 0..) |t, i| outer: {
         inline for (funcs) |f| {
             var runtimes: [max_iterations]u64 = undefined;
             var min: u64 = std.math.maxInt(u64);
             var max: u64 = 0;
             var runtime_sum: u128 = 0;
 
-            var i: usize = 0;
-            while (i < min_iterations or (i < max_iterations and runtime_sum < max_time)) : (i += 1) {
+            var j: usize = 0;
+            while (j < min_iterations or (j < max_iterations and runtime_sum < max_time)) : (j += 1) {
                 // Run benchmark and store runtime (in nanoseconds).
                 timer.reset();
-                const res = @field(B, f.name)(ally, target_types[index], t.data);
-                runtimes[i] = timer.read();
+                const res = @field(B, f.name)(ally, target_types[i], t.data);
+                runtimes[j] = timer.read();
 
                 // Add runtime to sum.
-                runtime_sum += runtimes[i];
+                runtime_sum += runtimes[j];
 
                 // Set mininum and maximum runtimes.
-                if (runtimes[i] < min) {
-                    min = if (res == error.Skipped) 0 else runtimes[i];
+                if (runtimes[j] < min) {
+                    min = if (res == error.Skipped) 0 else runtimes[j];
                 }
-                if (runtimes[i] > max) {
-                    max = if (res == error.Skipped) 0 else runtimes[i];
+                if (runtimes[j] > max) {
+                    max = if (res == error.Skipped) 0 else runtimes[j];
                 }
 
                 // Early break for skipped tests.
@@ -81,10 +81,10 @@ pub fn run(comptime B: type) !void {
             }
 
             // Compute mean.
-            const runtime_mean: u64 = @intCast(runtime_sum / i);
+            const runtime_mean: u64 = @intCast(runtime_sum / j);
 
-            if (index < tests.len) {
-                const arg_name = formatter("{s}", tests[index].name);
+            if (i < tests.len) {
+                const arg_name = formatter("{s}", tests[i].name);
 
                 if (min == 0 and max == 0) {
                     _ = try printBenchmark(
@@ -103,10 +103,10 @@ pub fn run(comptime B: type) !void {
                         min_widths,
                         f.name,
                         arg_name,
-                        i,
-                        formatter("{d}ms", min / time.ns_per_ms),
-                        formatter("{d}ms", max / time.ns_per_ms),
-                        formatter("{d}ms", runtime_mean / time.ns_per_ms),
+                        j,
+                        formatter("{d:.2}ms", formatTime(min)),
+                        formatter("{d:.2}ms", formatTime(max)),
+                        formatter("{d:.2}ms", formatTime(runtime_mean)),
                     );
                 }
             } else if (min == 0 and max == 0) {
@@ -114,7 +114,7 @@ pub fn run(comptime B: type) !void {
                     writer,
                     min_widths,
                     f.name,
-                    index,
+                    i,
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
@@ -125,17 +125,35 @@ pub fn run(comptime B: type) !void {
                     writer,
                     min_widths,
                     f.name,
-                    index,
                     i,
-                    formatter("{d}ms", min / time.ns_per_ms),
-                    formatter("{d}ms", max / time.ns_per_ms),
-                    formatter("{d}ms", runtime_mean / time.ns_per_ms),
+                    j,
+                    formatter("{d:.2}ms", formatTime(min)),
+                    formatter("{d:.2}ms", formatTime(max)),
+                    formatter("{d:.2}ms", formatTime(runtime_mean)),
                 );
             }
             try writer.writeAll("\n");
             try writer.context.flush();
         }
     }
+}
+
+fn formatTime(ns: u64) f64 {
+    const ns_float: f64 = @floatFromInt(ns);
+
+    if (ns_float >= time.ns_per_hour) {
+        return ns_float / @as(f64, @floatFromInt(time.ns_per_hour));
+    } else if (ns_float >= time.ns_per_min) {
+        return ns_float / @as(f64, @floatFromInt(time.ns_per_min));
+    } else if (ns_float >= time.ns_per_s) {
+        return ns_float / @as(f64, @floatFromInt(time.ns_per_s));
+    } else if (ns_float >= time.ns_per_ms) {
+        return ns_float / @as(f64, @floatFromInt(time.ns_per_ms));
+    } else if (ns_float >= 1000) {
+        return ns_float / @as(f64, @floatFromInt(time.ns_per_us));
+    }
+
+    return ns_float;
 }
 
 pub const TestCase = struct {
@@ -224,7 +242,7 @@ fn printBenchmark(
         test_name,
     });
     try writer.writeAll(" ");
-    const it_len = try alignedPrint(writer, .right, min_widths[1], "{}", .{iterations});
+    const it_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{iterations});
     try writer.writeAll(" ");
     const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "{}", .{min_runtime});
     try writer.writeAll(" ");
