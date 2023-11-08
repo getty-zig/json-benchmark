@@ -12,7 +12,7 @@ pub fn run(comptime B: type) !void {
     const target_types = if (@hasDecl(B, "target_types")) B.target_types else @compileError("missing `target_types` declaration");
     const min_n = if (@hasDecl(B, "min_n")) B.min_n else @compileError("missing `min_n` declaration");
     const max_n = if (@hasDecl(B, "max_n")) B.max_n else @compileError("missing `max_n` declaration");
-    const max_time = if (@hasDecl(B, "max_time")) B.max_time else 500 * time.ns_per_ms;
+    const max_time = if (@hasDecl(B, "max_time")) B.max_time else 30 * time.ns_per_min;
 
     const funcs = comptime getBenchmarkFuncs(B);
     const min_widths = getMinWidths(&tests, funcs);
