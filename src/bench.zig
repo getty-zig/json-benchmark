@@ -43,7 +43,7 @@ pub fn run(comptime B: type) !void {
     // Run benchmarks
     var timer = try time.Timer.start();
 
-    inline for (tests, 0..) |t, i| outer: {
+    inline for (tests, 0..) |t, i| {
         inline for (funcs) |f| {
             var runtimes: [max_iterations]u64 = undefined;
             var min: u64 = std.math.maxInt(u64);
@@ -68,11 +68,6 @@ pub fn run(comptime B: type) !void {
                     max = if (res == error.Skipped) 0 else runtimes[j];
                 }
 
-                // Early break for skipped tests.
-                if (res == error.Skipped) {
-                    break :outer;
-                }
-
                 // Avoid return value optimizations.
                 switch (@TypeOf(res)) {
                     void => {},
@@ -83,44 +78,31 @@ pub fn run(comptime B: type) !void {
             // Compute mean.
             const runtime_mean: u64 = @intCast(runtime_sum / j);
 
-            if (i < tests.len) {
-                // Print test results.
-                const test_name = formatter("{s}", tests[i].name);
+            const test_name = formatter("{s}", tests[i].name);
 
-                if (min == 0 and max == 0) {
-                    _ = try printBenchmark(
-                        writer,
-                        min_widths,
-                        f.name,
-                        test_name,
-                        formatter("{s}", "N/A"),
-                        formatter("{s}", "N/A"),
-                        formatter("{s}", "N/A"),
-                        formatter("{s}", "N/A"),
-                    );
-                } else {
-                    _ = try printBenchmark(
-                        writer,
-                        min_widths,
-                        f.name,
-                        test_name,
-                        j,
-                        formatter("{d:.2}ms", formatTime(min)),
-                        formatter("{d:.2}ms", formatTime(max)),
-                        formatter("{d:.2}ms", formatTime(runtime_mean)),
-                    );
-                }
-            } else if (min == 0 and max == 0) {
-                // Print skipped test results.
+            if (min == 0 and max == 0) {
+                // Skipped tests.
                 _ = try printBenchmark(
                     writer,
                     min_widths,
                     f.name,
-                    i,
+                    test_name,
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
                     formatter("{s}", "N/A"),
+                );
+            } else {
+                // Benchmarked tests.
+                _ = try printBenchmark(
+                    writer,
+                    min_widths,
+                    f.name,
+                    test_name,
+                    j,
+                    formatter("{d:.2}ms", formatTime(min)),
+                    formatter("{d:.2}ms", formatTime(max)),
+                    formatter("{d:.2}ms", formatTime(runtime_mean)),
                 );
             }
 
