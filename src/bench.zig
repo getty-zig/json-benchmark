@@ -10,8 +10,8 @@ pub fn run(comptime B: type) !void {
     const ally = if (@hasDecl(B, "allocator")) B.allocator else @compileError("missing `allocator` declaration");
     const tests = if (@hasDecl(B, "tests")) B.tests else @compileError("missing `tests` declaration");
     const target_types = if (@hasDecl(B, "target_types")) B.target_types else @compileError("missing `target_types` declaration");
-    const min_iterations = if (@hasDecl(B, "min_iterations")) B.min_iterations else @compileError("missing `min_iterations` declaration");
-    const max_iterations = if (@hasDecl(B, "max_iterations")) B.max_iterations else @compileError("missing `max_iterations` declaration");
+    const min_n = if (@hasDecl(B, "min_n")) B.min_n else @compileError("missing `min_n` declaration");
+    const max_n = if (@hasDecl(B, "max_n")) B.max_n else @compileError("missing `max_n` declaration");
     const max_time = if (@hasDecl(B, "max_time")) B.max_time else 500 * time.ns_per_ms;
 
     const funcs = comptime getBenchmarkFuncs(B);
@@ -45,13 +45,13 @@ pub fn run(comptime B: type) !void {
 
     inline for (tests, 0..) |t, i| {
         inline for (funcs) |f| {
-            var runtimes: [max_iterations]u64 = undefined;
+            var runtimes: [max_n]u64 = undefined;
             var min: u64 = std.math.maxInt(u64);
             var max: u64 = 0;
             var runtime_sum: u128 = 0;
 
             var j: usize = 0;
-            while (j < min_iterations or (j < max_iterations and runtime_sum < max_time)) : (j += 1) {
+            while (j < min_n or (j < max_n and runtime_sum < max_time)) : (j += 1) {
                 // Run benchmark and store runtime (in nanoseconds).
                 timer.reset();
                 const res = @field(B, f.name)(ally, target_types[i], t.data);
@@ -182,7 +182,7 @@ fn printBenchmarkGeneral(
     min_widths: [5]u64,
     func_name: []const u8,
     test_name: anytype,
-    iterations: anytype,
+    n: anytype,
     min_runtime: anytype,
     mean_runtime: anytype,
     max_runtime: anytype,
@@ -194,7 +194,7 @@ fn printBenchmarkGeneral(
         test_name,
     });
     try writer.writeAll("  ");
-    const it_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{iterations});
+    const n_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{n});
     try writer.writeAll("  ");
     const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "{}", .{min_runtime});
     try writer.writeAll("  ");
@@ -204,7 +204,7 @@ fn printBenchmarkGeneral(
 
     return [_]u64{
         name_len,
-        it_len,
+        n_len,
         min_runtime_len,
         mean_runtime_len,
         max_runtime_len,
@@ -216,7 +216,7 @@ fn printBenchmark(
     min_widths: [5]u64,
     func_name: []const u8,
     test_name: anytype,
-    iterations: u64,
+    n: u64,
     min_runtime: u64,
     mean_runtime: u64,
     max_runtime: u64,
@@ -229,7 +229,7 @@ fn printBenchmark(
     });
 
     try writer.writeAll("  ");
-    const it_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{iterations});
+    const n_len = try alignedPrint(writer, .right, min_widths[1], "{d}", .{n});
     try writer.writeAll("  ");
     const min_runtime_len = try formatTime(writer, min_widths[2], min_runtime);
     try writer.writeAll("  ");
@@ -239,7 +239,7 @@ fn printBenchmark(
 
     return [_]u64{
         name_len,
-        it_len,
+        n_len,
         min_runtime_len,
         mean_runtime_len,
         max_runtime_len,
@@ -265,7 +265,7 @@ fn printSkippedBenchmark(
     );
 
     try writer.writeAll("  ");
-    const it_len = try alignedPrint(writer, .right, min_widths[1], "SKIP", .{}); // iterations
+    const n_len = try alignedPrint(writer, .right, min_widths[1], "SKIP", .{}); // n
     try writer.writeAll("  ");
     const min_runtime_len = try alignedPrint(writer, .right, min_widths[2], "SKIP", .{}); // min
     try writer.writeAll("  ");
@@ -275,7 +275,7 @@ fn printSkippedBenchmark(
 
     return [_]u64{
         name_len,
-        it_len,
+        n_len,
         min_runtime_len,
         mean_runtime_len,
         max_runtime_len,

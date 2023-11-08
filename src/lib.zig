@@ -5,8 +5,8 @@ const bench = @import("bench.zig");
 const data = @import("data.zig");
 
 test "deserialize" {
+    const n: comptime_int = 10;
     const deserializations: comptime_int = 1;
-    const iterations: comptime_int = 24;
 
     try bench.run(struct {
         pub const allocator = std.heap.c_allocator;
@@ -32,8 +32,8 @@ test "deserialize" {
             data.CITM,
         };
 
-        pub const min_iterations = iterations;
-        pub const max_iterations = iterations;
+        pub const min_n = n;
+        pub const max_n = n;
 
         pub fn @"de/getty"(
             ally: std.mem.Allocator,
