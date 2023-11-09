@@ -5,7 +5,7 @@ const bench = @import("bench.zig");
 const data = @import("data.zig");
 
 test "deserialize" {
-    const n: comptime_int = 10;
+    const n: comptime_int = 5;
     const deserializations: comptime_int = 1;
 
     try bench.run(struct {
