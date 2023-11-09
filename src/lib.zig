@@ -59,13 +59,13 @@ test "deserialize" {
             }
 
             for (0..deserializations) |_| {
-                const output = try std.json.parseFromSlice(
+                const result = try std.json.parseFromSlice(
                     T,
                     ally,
                     input,
                     .{ .allocate = .alloc_always },
                 );
-                defer output.deinit();
+                defer result.deinit();
             }
         }
     });
