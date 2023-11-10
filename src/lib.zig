@@ -24,12 +24,17 @@ test "deserialize" {
                 .name = "citm_catalog",
                 .data = @embedFile("data/citm_catalog.json"),
             },
+            .{
+                .name = "string_unicode",
+                .data = @embedFile("data/string_unicode.json"),
+            },
         };
 
         pub const target_types = [_]type{
             data.Pastries,
             data.Canada,
             data.CITM,
+            data.StringUnicode,
         };
 
         pub const min_n = n;
