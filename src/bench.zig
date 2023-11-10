@@ -12,6 +12,7 @@ pub fn run(comptime B: type) !void {
     const target_types = if (@hasDecl(B, "target_types")) B.target_types else @compileError("missing `target_types` declaration");
     const min_n = if (@hasDecl(B, "min_n")) B.min_n else @compileError("missing `min_n` declaration");
     const max_n = if (@hasDecl(B, "max_n")) B.max_n else @compileError("missing `max_n` declaration");
+    const warmup_n = if (@hasDecl(B, "warmup_n")) B.warmup_n else 1;
     const max_time = if (@hasDecl(B, "max_time")) B.max_time else 30 * time.ns_per_min;
 
     const funcs = comptime getBenchmarkFuncs(B);
@@ -49,6 +50,11 @@ pub fn run(comptime B: type) !void {
             var min: u64 = std.math.maxInt(u64);
             var max: u64 = 0;
             var runtime_sum: u128 = 0;
+
+            // Warmups
+            inline for (0..warmup_n) |_| {
+                _ = @field(B, f.name)(ally, target_types[i], t.data) catch {};
+            }
 
             var n: usize = 0;
             while (n < min_n or (n < max_n and runtime_sum < max_time)) : (n += 1) {
