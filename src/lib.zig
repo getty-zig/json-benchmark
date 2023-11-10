@@ -5,7 +5,7 @@ const bench = @import("bench.zig");
 const data = @import("data.zig");
 
 test "deserialize" {
-    const n: comptime_int = 5;
+    const n: comptime_int = 10;
     const deserializations: comptime_int = 1;
 
     try bench.run(struct {
@@ -42,7 +42,7 @@ test "deserialize" {
         ) !void {
             for (0..deserializations) |_| {
                 const result = try json.fromSlice(ally, T, input);
-                defer result.deinit();
+                result.deinit();
             }
         }
 
@@ -59,13 +59,8 @@ test "deserialize" {
             }
 
             for (0..deserializations) |_| {
-                const result = try std.json.parseFromSlice(
-                    T,
-                    ally,
-                    input,
-                    .{ .allocate = .alloc_always },
-                );
-                defer result.deinit();
+                const result = try std.json.parseFromSlice(T, ally, input, .{ .allocate = .alloc_always });
+                result.deinit();
             }
         }
     });
