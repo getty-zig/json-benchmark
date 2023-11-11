@@ -296,7 +296,7 @@ fn formatTime(writer: anytype, min_width: u64, ns: u64) !u64 {
     } else if (ns_float >= time.ns_per_min) {
         return try alignedPrint(writer, .right, min_width, "{d:.2}min", .{ns_float / @as(f64, @floatFromInt(time.ns_per_min))});
     } else if (ns_float >= time.ns_per_s) {
-        return try alignedPrint(writer, .right, min_width, "{d:.2}sec", .{ns_float / @as(f64, @floatFromInt(time.ns_per_s))});
+        return try alignedPrint(writer, .right, min_width, "{d:.2}s", .{ns_float / @as(f64, @floatFromInt(time.ns_per_s))});
     } else if (ns_float >= time.ns_per_ms) {
         return try alignedPrint(writer, .right, min_width, "{d:.2}ms", .{ns_float / @as(f64, @floatFromInt(time.ns_per_ms))});
     } else if (ns_float >= 1000) {
