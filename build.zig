@@ -22,6 +22,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     bench.root_module.addImport("json", json_module);
+    bench.linkLibC();
 
     const bench_step = b.step("bench", "Run benchmarks");
     const run_bench = b.addRunArtifact(bench);
